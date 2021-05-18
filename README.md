@@ -1,4 +1,4 @@
-# Note-App-Flutter <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white">
+# Note App Flutter <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white">
 
 Attempt to learn flutter and clone my favourite Google Keep App.
 
