@@ -1,6 +1,6 @@
-# design_tutorial
+# Note-App-Flutter
 
-A new Flutter project.
+Attempt to learn flutter and clone my favourite Google Keep App.
 
 ## Getting Started
 
