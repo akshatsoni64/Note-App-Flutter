@@ -38,7 +38,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<Note> notesList = [];
-  String appBarTitle = "Note App";
   String label = "";
   String text = "tiles";
   List<String> inputLabels = [];
@@ -46,6 +45,7 @@ class _MyHomePageState extends State<MyHomePage> {
   TextEditingController LabelController = new TextEditingController();
   TextEditingController TitleController = new TextEditingController();
   TextEditingController TextController = new TextEditingController();
+  TextEditingController searchController = new TextEditingController();
 
   Future<List<Note>> getNotes(String label) async {
     var notes = await http.get(Uri.http("192.168.2.7:5000", "/api/v1/notes/", {"labels": label}));
@@ -61,6 +61,23 @@ class _MyHomePageState extends State<MyHomePage> {
       notesList.add(new Note.fromJson(note));
     });
     return notesList;
+  }
+
+  void searchNotes(String search) async {
+    var notes = await http.get(Uri.http("192.168.2.7:5000", "/api/v1/notes/search/", {"search": search}));
+    List<dynamic> list = jsonDecode(notes.body);
+    List<Note> notesList = [];
+    list.forEach((note) {
+      List<String> strList = [];
+      for (String label in note['labels']) {
+        strList.add(label);
+      }
+      note['id'] = note['_id'];
+      note['labels'] = strList;
+      notesList.add(new Note.fromJson(note));
+    });
+    print(notesList);
+    setState(() => {this.notesList = notesList});
   }
 
   Future<List<String>> getLabels() async {
@@ -81,8 +98,8 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     getNotes("").then((value) => {
-          setState(() => {notesList = value})
-        });
+      setState(() => {notesList = value})
+    });
     getLabels().then((value) {
       setState(() => {labelCategories = value});
     });
@@ -98,7 +115,7 @@ class _MyHomePageState extends State<MyHomePage> {
           onTap: () {
             Navigator.pop(context);
             getNotes(label).then((value) => {
-              setState(() => {notesList = value, appBarTitle = label+" Notes"})
+              setState(() => {notesList = value, actionIcon = Icon(Icons.search), appTitle = Text(label+" Notes")})
             });
             showSnackBar("$label Clicked");
           },
@@ -208,11 +225,14 @@ class _MyHomePageState extends State<MyHomePage> {
     return chips;
   }
 
+  Icon actionIcon = new Icon(Icons.search);
+  Widget appTitle = new Text("Note App");
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
-          title: Text(appBarTitle),
+          title: Center(child: appTitle),
           leading: Builder(
             builder: (context) => IconButton(
               icon: Icon(Icons.menu_rounded),
@@ -220,6 +240,33 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
           actions: [
+            IconButton(
+              icon: actionIcon,
+              onPressed: (){
+                setState(() {
+                  if(this.actionIcon.icon == Icons.search){
+                    this.actionIcon = Icon(Icons.arrow_forward);
+                    this.appTitle = TextField(
+                      onSubmitted: searchNotes,
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.close),
+                          onPressed: searchController.clear,
+                        ),
+                        hintText: "Search keywords from note",
+                        border: InputBorder.none,
+
+                      ),
+                    );
+                  }
+                  else{
+                    this.actionIcon = Icon(Icons.search);
+                    this.appTitle = new Text("Note App");
+                  }
+                });
+              },
+            ),
             Builder(
               builder: (context) => IconButton(
                 icon: Icon(Icons.note_add_rounded),
@@ -227,16 +274,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 onPressed: () => Scaffold.of(context).openEndDrawer(),
               ),
             ),
-            Builder(
-              builder: (context) => IconButton(
-                  icon: Icon(Icons.refresh),
-                  tooltip: "Add Note",
-                  onPressed: () {
-                    refreshData();
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(getSnackbar("Refreshing Notes..."));
-                  }),
-            )
           ],
         ),
         drawer: Drawer(
@@ -323,13 +360,14 @@ class _MyHomePageState extends State<MyHomePage> {
                               TextController.text != null) {
                             postNotes();
                           } else {
+                            Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                                 getErrorSnackbar("All fields are required"));
                           }
                         },
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [Icon(Icons.add), Text("Add Note")],
+                          children: [Icon(Icons.add)],
                         ),
                       ),
                     )
@@ -423,7 +461,6 @@ class _MyHomePageState extends State<MyHomePage> {
               }),
         ),
         // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        /*
         floatingActionButton: FloatingActionButton(
           // backgroundColor: Colors.red,
           onPressed: () {
@@ -435,7 +472,6 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Icon(Icons.refresh),
           // elevation: 5.0,
         ),
-         */
         bottomNavigationBar: BottomAppBar(
             color: Colors.blueGrey,
             shape: CircularNotchedRectangle(),
